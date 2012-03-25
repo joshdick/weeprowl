@@ -21,9 +21,9 @@ To get started with `weeprowl`:
 
 `weeprowl` has a few configurable options. Please view the top of `weeprowl.py` to see what they are and how to configure them.
 
-## License and Other Info 
+## License and Other Info
 
-`weeprowl` is based on the `notify` plugin version 0.0.5 by lavaramano <lavaramano AT gmail DOT com>.
+`weeprowl` is based on the `notify` plugin version 0.0.5 by lavaramano (lavaramano AT gmail DOT com).
 
 `notify` is released under a GPL v2 license; therefore, `weeprowl` is as well.
 
