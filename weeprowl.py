@@ -7,12 +7,14 @@
 # Based on the 'notify' plugin version 0.0.5 by lavaramano <lavaramano AT gmail DOT com>:
 # <http://www.weechat.org/scripts/source/stable/notify.py.html/>
 #
+# 2012-09-16, Josh Dick <josh@joshdick.net>
+#     Version 0.2: Added 'away_notification' setting
 # 2012-03-25, Josh Dick <josh@joshdick.net>
 #     Version 0.1: Initial release
 
 import httplib, urllib, weechat
 
-weechat.register('weeprowl', 'Josh Dick', '0.1', 'GPL', 'weeprowl: Prowl notifications for weechat', '', '')
+weechat.register('weeprowl', 'Josh Dick', '0.2', 'GPL', 'weeprowl: Prowl notifications for weechat', '', '')
 
 # Plugin settings
 settings = {
@@ -20,7 +22,8 @@ settings = {
     'show_hilights'      : 'on',
     'show_priv_msg'      : 'on',
     'nick_separator'     : ': ',
-    'smart_notification' : 'off' # Enable to prevent weeprowl from sending notifications for active channel/pv windows
+    'away_notification'  : 'on', # 'off' disables notifications for buffers marked /away (takes precedence over smart_notification)
+    'smart_notification' : 'off' # 'on' disables notifications for active (currently visible) buffers
 }
 
 # Hook for private messages/hilights
@@ -36,7 +39,10 @@ def show_config_help():
 # Triggered by the weechat hook above
 def notify_show(data, bufferp, uber_empty, tagsn, isdisplayed, ishilight, prefix, message):
 
-    if (weechat.config_get_plugin('smart_notification') == 'on' and bufferp == weechat.current_buffer()):
+    if (weechat.config_get_plugin('away_notification') == 'off' and weechat.buffer_get_string(bufferp, "localvar_away")):
+        pass
+
+    elif (weechat.config_get_plugin('smart_notification') == 'on' and bufferp == weechat.current_buffer()):
         pass
 
     elif (weechat.buffer_get_string(bufferp, 'localvar_type') == 'private' and weechat.config_get_plugin('show_priv_msg') == 'on'):
