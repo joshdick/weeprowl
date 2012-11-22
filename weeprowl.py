@@ -8,26 +8,31 @@
 # <http://www.weechat.org/scripts/source/stable/notify.py.html/>
 #
 # 2012-09-16, Josh Dick <josh@joshdick.net>
+#     Version 0.3: Removed 'smart_notification' and away_notification' settings
+#                  in favor of more granular notification settings
+# 2012-09-16, Josh Dick <josh@joshdick.net>
 #     Version 0.2: Added 'away_notification' setting
 # 2012-03-25, Josh Dick <josh@joshdick.net>
 #     Version 0.1: Initial release
 
 import httplib, urllib, weechat
 
-weechat.register('weeprowl', 'Josh Dick', '0.2', 'GPL', 'weeprowl: Prowl notifications for weechat', '', '')
+weechat.register('weeprowl', 'Josh Dick', '0.3', 'GPL', 'weeprowl: Prowl notifications for weechat', '', '')
 
 # Plugin settings
 settings = {
-    'prowl_api_key'      : '',
-    'show_hilights'      : 'on',
-    'show_priv_msg'      : 'on',
-    'nick_separator'     : ': ',
-    'away_notification'  : 'on', # 'off' disables notifications for buffers marked /away (takes precedence over smart_notification)
-    'smart_notification' : 'off' # 'on' disables notifications for active (currently visible) buffers
+    'prowl_api_key': '',
+    'show_hilights': 'on',
+    'show_priv_msg': 'on',
+    'nick_separator': ': ',
+    'notify_focused_active': 'on', # If 'on', send Prowl notifications for the currently-focused buffer when not away
+    'notify_focused_away': 'on', # If 'on', send Prowl notifications for the currently-focused buffer when away
+    'notify_unfocused_active': 'on', # If 'on', send Prowl notifications for non-focused buffers when not away
+    'notify_unfocused_away': 'on' # If 'on', send Prowl notifications for non-focused buffers when away
 }
 
 # Hook for private messages/hilights
-weechat.hook_print('', 'irc_privmsg', '', 1, 'notify_show', '')
+weechat.hook_print('', 'irc_privmsg', '', 1, 'notification_callback', '')
 
 # Shows an error/help message if prowl_api_key is not set
 def show_config_help():
@@ -37,25 +42,34 @@ def show_config_help():
     weechat.prnt('', '%sweeprowl - /set plugins.var.python.weeprowl.prowl_api_key "your_prowl_api_key_here"' % weechat.prefix('error'))
 
 # Triggered by the weechat hook above
-def notify_show(data, bufferp, uber_empty, tagsn, isdisplayed, ishilight, prefix, message):
+def notification_callback(data, bufferp, uber_empty, tagsn, isdisplayed, ishilight, prefix, message):
 
-    if (weechat.config_get_plugin('away_notification') == 'off' and weechat.buffer_get_string(bufferp, "localvar_away")):
-        pass
+    is_away = weechat.buffer_get_string(bufferp, "localvar_away")
+    is_focused = bufferp == weechat.current_buffer()
+    do_prowl = True # If set to False depending on state and settings, no Prowl notification will be sent
 
-    elif (weechat.config_get_plugin('smart_notification') == 'on' and bufferp == weechat.current_buffer()):
-        pass
+    if (is_away):
+        if (is_focused and weechat.config_get_plugin('notify_focused_away') != 'on'):
+            do_prowl = False
+        elif (not is_focused and weechat.config_get_plugin('notify_unfocused_away') != 'on'):
+            do_prowl = False
+    else:
+        if (is_focused and weechat.config_get_plugin('notify_focused_active') != 'on'):
+            do_prowl = False
+        elif (not is_focused and weechat.config_get_plugin('notify_unfocused_active') != 'on'):
+            do_prowl = False
 
-    elif (weechat.buffer_get_string(bufferp, 'localvar_type') == 'private' and weechat.config_get_plugin('show_priv_msg') == 'on'):
-        show_notification(prefix, message, True)
-
-    elif (ishilight == '1' and weechat.config_get_plugin('show_hilights') == 'on'):
-        buffer = (weechat.buffer_get_string(bufferp, 'short_name') or weechat.buffer_get_string(bufferp, 'name'))
-        show_notification(buffer, prefix + weechat.config_get_plugin('nick_separator') + message, False)
+    if (do_prowl):
+        if (weechat.buffer_get_string(bufferp, 'localvar_type') == 'private' and weechat.config_get_plugin('show_priv_msg') == 'on'):
+            send_prowl_notification(prefix, message, True)
+        elif (ishilight == '1' and weechat.config_get_plugin('show_hilights') == 'on'):
+            buffer = (weechat.buffer_get_string(bufferp, 'short_name') or weechat.buffer_get_string(bufferp, 'name'))
+            send_prowl_notification(buffer, prefix + weechat.config_get_plugin('nick_separator') + message, False)
 
     return weechat.WEECHAT_RC_OK
 
 # Send a Prowl notification via the Prowl API (API documentation: <http://www.prowlapp.com/api.php>)
-def show_notification(chan, message, isPrivate):
+def send_prowl_notification(chan, message, isPrivate):
 
     # Error checking - we need a valid prowl API key to be set in order to send a Prowl notification
     prowl_api_key = weechat.config_get_plugin('prowl_api_key')
