@@ -7,6 +7,8 @@
 # Based on the 'notify' plugin version 0.0.5 by lavaramano <lavaramano AT gmail DOT com>:
 # <http://www.weechat.org/scripts/source/stable/notify.py.html/>
 #
+# 2013-08-13, Josh Dick <josh@joshdick.net>
+#     Version 0.4: No longer sending notifications for text you send in private messages
 # 2012-09-16, Josh Dick <josh@joshdick.net>
 #     Version 0.3: Removed 'smart_notification' and away_notification' settings
 #                  in favor of more granular notification settings
@@ -17,7 +19,7 @@
 
 import httplib, urllib, weechat
 
-weechat.register('weeprowl', 'Josh Dick', '0.3', 'GPL', 'weeprowl: Prowl notifications for weechat', '', '')
+weechat.register('weeprowl', 'Josh Dick', '0.4', 'GPL', 'weeprowl: Prowl notifications for weechat', '', '')
 
 # Plugin settings
 settings = {
@@ -60,7 +62,7 @@ def notification_callback(data, bufferp, uber_empty, tagsn, isdisplayed, ishilig
             do_prowl = False
 
     if (do_prowl):
-        if (weechat.buffer_get_string(bufferp, 'localvar_type') == 'private' and weechat.config_get_plugin('show_priv_msg') == 'on'):
+        if (weechat.buffer_get_string(bufferp, 'localvar_type') == 'private' and weechat.config_get_plugin('show_priv_msg') == 'on' and prefix != weechat.buffer_get_string(bufferp, 'localvar_nick')):
             send_prowl_notification(prefix, message, True)
         elif (ishilight == '1' and weechat.config_get_plugin('show_hilights') == 'on'):
             buffer = (weechat.buffer_get_string(bufferp, 'short_name') or weechat.buffer_get_string(bufferp, 'name'))
