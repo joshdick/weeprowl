@@ -22,7 +22,7 @@
 
 import urllib, weechat
 
-weechat.register('weeprowl', 'Josh Dick', '0.4', 'GPL', 'weeprowl: Prowl notifications for WeeChat', '', '')
+weechat.register('weeprowl', 'Josh Dick', '0.5', 'GPL', 'weeprowl: Prowl notifications for WeeChat', '', '')
 
 # Plugin settings
 settings = {
