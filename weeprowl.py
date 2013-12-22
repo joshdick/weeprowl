@@ -7,6 +7,9 @@
 # Based on the 'notify' plugin version 0.0.5 by lavaramano <lavaramano AT gmail DOT com>:
 # <http://www.weechat.org/scripts/source/stable/notify.py.html/>
 #
+# 2013-12-22, Josh Dick <josh@joshdick.net>
+#     Version 0.6: Fixed bug that was preventing negative numbers from working with
+#                  the prowl_priority setting
 # 2013-12-20, Josh Dick <josh@joshdick.net>
 #     Version 0.5: Now backgrounds Prowl API requests, added prowl_priority setting,
 #                  now requires WeeChat version 0.3.7 or greater
@@ -22,7 +25,7 @@
 
 import urllib, weechat
 
-weechat.register('weeprowl', 'Josh Dick', '0.5', 'GPL', 'weeprowl: Prowl notifications for WeeChat', '', '')
+weechat.register('weeprowl', 'Josh Dick', '0.6', 'GPL', 'weeprowl: Prowl notifications for WeeChat', '', '')
 
 # Plugin settings
 settings = {
@@ -90,7 +93,13 @@ def send_prowl_notification(chan, message, isPrivate):
 
     # Make sure a valid Prowl priority has been configured
     prowl_priority = weechat.config_get_plugin('prowl_priority')
-    if (not prowl_priority.isdigit() or int(prowl_priority) > 2 or int(prowl_priority) < -2):
+    valid_prowl_priority = True
+    try:
+        if (int(prowl_priority) > 2 or int(prowl_priority) < -2):
+            valid_prowl_priority = False
+    except ValueError:
+            valid_prowl_priority = False
+    if (not valid_prowl_priority):
         weechat.prnt('', '%sweeprowl - Current prowl_priority setting "%s" is invalid.' % (weechat.prefix('error'), prowl_priority))
         weechat.prnt('', '%sweeprowl - Please set prowl_priority to an integer value ranging from [-2, 2].' % weechat.prefix('error'))
         show_notification_error()
