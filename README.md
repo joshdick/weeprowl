@@ -8,7 +8,7 @@
 
 ## Installation and Usage
 
-`weeprowl` requires Python 2 and weechat version 3.0.0 or greater.
+`weeprowl` requires Python 2 and weechat version 0.3.7 or greater.
 
 To get started with `weeprowl`:
 
