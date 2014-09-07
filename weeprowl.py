@@ -7,6 +7,11 @@
 # Based on the 'notify' plugin version 0.0.5 by lavaramano <lavaramano AT gmail DOT com>:
 # <http://www.weechat.org/scripts/source/stable/notify.py.html/>
 #
+# 2014-09-07, Josh Dick <josh@joshdick.net>
+#     Version 0.7: Fixed an issue that was preventing hilight notifications from being sent
+#                  (normalized for a possible API type change in WeeChat);
+#                  Minor stylistic tweaks to send_prowl_notification;
+#                  Addded a comment with debugging information
 # 2013-12-22, Josh Dick <josh@joshdick.net>
 #     Version 0.6: Fixed bug that was preventing negative numbers from working with
 #                  the prowl_priority setting
@@ -25,7 +30,7 @@
 
 import urllib, weechat
 
-weechat.register('weeprowl', 'Josh Dick', '0.6', 'GPL', 'weeprowl: Prowl notifications for WeeChat', '', '')
+weechat.register('weeprowl', 'Josh Dick', '0.7', 'GPL', 'weeprowl: Prowl notifications for WeeChat', '', '')
 
 # Plugin settings
 settings = {
@@ -75,7 +80,7 @@ def notification_callback(data, bufferp, uber_empty, tagsn, isdisplayed, ishilig
     if (do_prowl):
         if (weechat.buffer_get_string(bufferp, 'localvar_type') == 'private' and weechat.config_get_plugin('show_priv_msg') == 'on' and prefix != weechat.buffer_get_string(bufferp, 'localvar_nick')):
             send_prowl_notification(prefix, message, True)
-        elif (ishilight == '1' and weechat.config_get_plugin('show_hilights') == 'on'):
+        elif (str(ishilight) == '1' and weechat.config_get_plugin('show_hilights') == 'on'):
             buffer = (weechat.buffer_get_string(bufferp, 'short_name') or weechat.buffer_get_string(bufferp, 'name'))
             send_prowl_notification(buffer, prefix + weechat.config_get_plugin('nick_separator') + message, False)
 
@@ -105,8 +110,8 @@ def send_prowl_notification(chan, message, isPrivate):
         show_notification_error()
         return
 
-    # Build the Prowl API request parameters
-    params = urllib.urlencode({
+    # Build the Prowl API request data
+    request_data = urllib.urlencode({
         'apikey': prowl_api_key,
         'application': 'weechat',
         'event': 'IRC ' + 'Private Message' if isPrivate else 'Mention/Hilight',
@@ -114,13 +119,10 @@ def send_prowl_notification(chan, message, isPrivate):
         'priority': prowl_priority
     })
 
-    # Build the complete Prowl API request URL
-    prowl_api_url = 'https://api.prowlapp.com/publicapi/add?' + params
-
     # Make the Prowl API request
     weechat.hook_process_hashtable(
-        'url:' + prowl_api_url,
-        { 'post': '1' },
+        'url:https://api.prowlapp.com/publicapi/add',
+        { 'post': '1', 'postfields': request_data }, # Useful for debugging: { 'verbose': '1', 'ssl_verifypeer': '0' }
         30 * 1000,
         'send_prowl_notification_callback',
         ''
